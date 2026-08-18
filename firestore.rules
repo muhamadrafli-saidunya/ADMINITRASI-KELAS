@@ -1,0 +1,132 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Settings Collection (School Info)
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isValidId(settingId);
+    }
+
+    // Students
+    match /students/{studentId} {
+      allow read: if true;
+      allow write: if isValidId(studentId) &&
+        incoming().nama is string && incoming().nama.size() <= 150;
+    }
+
+    // Teachers
+    match /teachers/{teacherId} {
+      allow read: if true;
+      allow write: if isValidId(teacherId) &&
+        incoming().nama is string && incoming().nama.size() <= 150;
+    }
+
+    // Subjects
+    match /subjects/{subjectId} {
+      allow read: if true;
+      allow write: if isValidId(subjectId) &&
+        incoming().nama is string && incoming().nama.size() <= 150;
+    }
+
+    // Tujuan Pembelajaran
+    match /tujuanPembelajaran/{tpId} {
+      allow read: if true;
+      allow write: if isValidId(tpId) &&
+        incoming().kode is string && incoming().kode.size() <= 50;
+    }
+
+    // Grades
+    match /grades/{gradeId} {
+      allow read: if true;
+      allow write: if isValidId(gradeId) &&
+        incoming().siswaId is string && incoming().siswaId.size() <= 100 &&
+        incoming().nilai is number && incoming().nilai >= 0 && incoming().nilai <= 100;
+    }
+
+    // Attendance
+    match /attendance/{attendanceId} {
+      allow read: if true;
+      allow write: if isValidId(attendanceId) &&
+        incoming().siswaId is string && incoming().siswaId.size() <= 100;
+    }
+
+    // Timetable Schedule
+    match /schedule/{scheduleId} {
+      allow read: if true;
+      allow write: if isValidId(scheduleId) &&
+        incoming().hari is string && incoming().jamKe is number;
+    }
+
+    // Cleaning Duties (Piket)
+    match /cleaningDuties/{dutyId} {
+      allow read: if true;
+      allow write: if isValidId(dutyId) &&
+        incoming().hari is string && incoming().hari.size() <= 50;
+    }
+
+    // Events / School Calendar
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isValidId(eventId) &&
+        incoming().judul is string && incoming().judul.size() <= 200;
+    }
+
+    // Teacher Journals
+    match /journals/{journalId} {
+      allow read: if true;
+      allow write: if isValidId(journalId) &&
+        incoming().materi is string && incoming().materi.size() <= 300;
+    }
+
+    // Cash Transactions
+    match /transactions/{transactionId} {
+      allow read: if true;
+      allow write: if isValidId(transactionId) &&
+        incoming().keterangan is string && incoming().keterangan.size() <= 300;
+    }
+
+    // Student Weekly Dues Tracker
+    match /weeklyDues/{duesId} {
+      allow read: if true;
+      allow write: if isValidId(duesId) &&
+        incoming().siswaId is string && incoming().siswaId.size() <= 100;
+    }
+
+    // Inventory Items
+    match /inventory/{itemId} {
+      allow read: if true;
+      allow write: if isValidId(itemId) &&
+        incoming().namaBarang is string && incoming().namaBarang.size() <= 150;
+    }
+
+    // Student Counseling and Achievement Notes
+    match /studentNotes/{noteId} {
+      allow read: if true;
+      allow write: if isValidId(noteId) &&
+        incoming().kasusAtauPrestasi is string && incoming().kasusAtauPrestasi.size() <= 300;
+    }
+
+    // Connection Test Document
+    match /test/{testId} {
+      allow read, write: if true;
+    }
+  }
+}
