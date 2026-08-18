@@ -31,6 +31,8 @@ export const PresensiView: React.FC = () => {
     addToast
   } = useApp();
 
+  const safeStudents = students || [];
+
   const [activeSubTab, setActiveSubTab] = useState<'harian' | 'bulanan'>('harian');
   const [selectedDate, setSelectedDate] = useState<string>('2026-08-17');
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-08');
@@ -38,17 +40,17 @@ export const PresensiView: React.FC = () => {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   // Today / Selected Date Attendance Records
-  const dateRecords = getAttendanceByDate(selectedDate);
+  const dateRecords = getAttendanceByDate(selectedDate) || [];
   const getStatusForStudent = (siswaId: string): { status: AttendanceStatus; keterangan?: string } => {
     const rec = dateRecords.find(r => r.siswaId === siswaId);
     return rec ? { status: rec.status, keterangan: rec.keterangan } : { status: 'Hadir', keterangan: '' };
   };
 
-  const hadirCount = dateRecords.filter(r => r.status === 'Hadir').length || (dateRecords.length === 0 ? students.length : 0);
+  const hadirCount = dateRecords.filter(r => r.status === 'Hadir').length || (dateRecords.length === 0 ? safeStudents.length : 0);
   const sakitCount = dateRecords.filter(r => r.status === 'Sakit').length;
   const izinCount = dateRecords.filter(r => r.status === 'Izin').length;
   const alpaCount = dateRecords.filter(r => r.status === 'Alpa').length;
-  const attendanceRate = students.length > 0 ? Math.round((hadirCount / students.length) * 100) : 100;
+  const attendanceRate = safeStudents.length > 0 ? Math.round((hadirCount / safeStudents.length) * 100) : 100;
 
   const handleStatusChange = (siswaId: string, status: AttendanceStatus, keterangan?: string) => {
     markAttendance(siswaId, status, selectedDate, keterangan);
@@ -58,7 +60,7 @@ export const PresensiView: React.FC = () => {
     bulkMarkAttendance(selectedDate, 'Hadir');
   };
 
-  const filteredStudents = students.filter(s =>
+  const filteredStudents = safeStudents.filter(s =>
     s.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.nisn.includes(searchQuery)
   );

@@ -3,6 +3,7 @@ import {
   Student,
   Teacher,
   Subject,
+  TujuanPembelajaran,
   GradeRecord,
   AttendanceRecord,
   TeachingJournal,
@@ -18,15 +19,18 @@ import {
   UserRole,
   ActiveTab,
   AttendanceStatus,
-  AssessmentType
+  AssessmentType,
+  RolePermissions
 } from '../types';
 
 import {
   INITIAL_USERS,
+  DEFAULT_ROLE_PERMISSIONS,
   INITIAL_SCHOOL_INFO,
   INITIAL_STUDENTS,
   INITIAL_TEACHERS,
   INITIAL_SUBJECTS,
+  INITIAL_TUJUAN_PEMBELAJARAN,
   generateInitialGrades,
   generateInitialAttendance,
   INITIAL_JOURNALS,
@@ -59,6 +63,17 @@ interface AppContextType {
   login: (identifier: string, password: string) => { success: boolean; error?: string };
   logout: () => void;
   
+  // User Management & RBAC Menu Permissions
+  addUser: (user: Omit<UserProfile, 'id'>) => { success: boolean; error?: string };
+  updateUser: (id: string, updated: Partial<UserProfile>) => { success: boolean; error?: string };
+  deleteUser: (id: string) => { success: boolean; error?: string };
+  toggleUserStatus: (id: string) => void;
+  resetUserPassword: (id: string, newPass: string) => void;
+  rolePermissions: RolePermissions;
+  updateRolePermissions: (role: UserRole, tabs: ActiveTab[]) => void;
+  resetRolePermissionsToDefault: () => void;
+  hasPermission: (tab: ActiveTab, user?: UserProfile) => boolean;
+
   // Theme
   isDarkMode: boolean;
   toggleDarkMode: () => void;
@@ -86,6 +101,14 @@ interface AppContextType {
   addSubject: (subject: Omit<Subject, 'id'>) => void;
   updateSubject: (id: string, updated: Partial<Subject>) => void;
   deleteSubject: (id: string) => void;
+
+  // Tujuan Pembelajaran (TP)
+  tujuanPembelajaranList: TujuanPembelajaran[];
+  addTP: (tp: Omit<TujuanPembelajaran, 'id'>) => void;
+  updateTP: (id: string, updated: Partial<TujuanPembelajaran>) => void;
+  deleteTP: (id: string) => void;
+  getTPBySubject: (mapelId: string) => TujuanPembelajaran[];
+  resetTPToDefault: () => void;
 
   // Attendance
   attendanceRecords: AttendanceRecord[];
@@ -209,11 +232,22 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const STORAGE_PREFIX = 'admin_kelas_sd_v1_';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Read initial from localStorage or fall back
+  // Read initial from localStorage or fall back safely
   const getSaved = <T,>(key: string, fallback: T): T => {
     try {
       const item = localStorage.getItem(STORAGE_PREFIX + key);
-      return item ? JSON.parse(item) : fallback;
+      if (!item || item === 'null' || item === 'undefined') return fallback;
+      const parsed = JSON.parse(item);
+      if (parsed === null || parsed === undefined) return fallback;
+      if (Array.isArray(fallback)) {
+        if (!Array.isArray(parsed)) return fallback;
+        return parsed as T;
+      }
+      if (typeof fallback === 'object' && fallback !== null) {
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return fallback;
+        return { ...fallback, ...parsed };
+      }
+      return parsed as T;
     } catch {
       return fallback;
     }
@@ -221,7 +255,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // State Declarations
   const [currentTab, setCurrentTab] = useState<ActiveTab>('dashboard');
-  const [availableUsers] = useState<UserProfile[]>(INITIAL_USERS);
+  const [availableUsers, setAvailableUsers] = useState<UserProfile[]>(() =>
+    getSaved('users', INITIAL_USERS)
+  );
+  const [rolePermissions, setRolePermissions] = useState<RolePermissions>(() =>
+    getSaved('rolePermissions', DEFAULT_ROLE_PERMISSIONS)
+  );
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => 
     getSaved('currentUser', INITIAL_USERS[0])
   );
@@ -248,8 +287,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     getSaved('teachers', INITIAL_TEACHERS)
   );
 
-  const [subjects, setSubjects] = useState<Subject[]>(() => 
-    getSaved('subjects', INITIAL_SUBJECTS)
+  const [subjects, setSubjects] = useState<Subject[]>(() => {
+    const saved = getSaved('subjects', INITIAL_SUBJECTS);
+    const paiIdx = saved.findIndex(s => s.kode === 'PAI' || s.id === 'mapel-05' || s.nama.toLowerCase().includes('agama'));
+    if (paiIdx > 0) {
+      const reordered = [...saved];
+      const [paiItem] = reordered.splice(paiIdx, 1);
+      reordered.unshift(paiItem);
+      return reordered;
+    }
+    return saved;
+  });
+
+  const [tujuanPembelajaranList, setTujuanPembelajaranList] = useState<TujuanPembelajaran[]>(() => 
+    getSaved('tujuanPembelajaran', INITIAL_TUJUAN_PEMBELAJARAN)
   );
 
   const [grades, setGrades] = useState<GradeRecord[]>(() => 
@@ -305,6 +356,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser]);
 
   useEffect(() => {
+    localStorage.setItem(STORAGE_PREFIX + 'users', JSON.stringify(availableUsers));
+  }, [availableUsers]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_PREFIX + 'rolePermissions', JSON.stringify(rolePermissions));
+  }, [rolePermissions]);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_PREFIX + 'darkMode', JSON.stringify(isDarkMode));
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -328,6 +387,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     localStorage.setItem(STORAGE_PREFIX + 'subjects', JSON.stringify(subjects));
   }, [subjects]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_PREFIX + 'tujuanPembelajaran', JSON.stringify(tujuanPembelajaranList));
+  }, [tujuanPembelajaranList]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_PREFIX + 'grades', JSON.stringify(grades));
@@ -391,6 +454,140 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsDarkMode(prev => !prev);
   };
 
+  // User Management & RBAC Methods
+  const hasPermission = (tab: ActiveTab, user?: UserProfile): boolean => {
+    const targetUser = user || currentUser;
+    if (!targetUser) return false;
+    
+    // Check if user has explicit custom tab overrides
+    if (targetUser.customAllowedTabs && targetUser.customAllowedTabs.length > 0) {
+      return targetUser.customAllowedTabs.includes(tab);
+    }
+    
+    // Check role permissions
+    const allowed = rolePermissions[targetUser.role] || DEFAULT_ROLE_PERMISSIONS[targetUser.role] || [];
+    return allowed.includes(tab);
+  };
+
+  const addUser = (userData: Omit<UserProfile, 'id'>): { success: boolean; error?: string } => {
+    const username = (userData.username || '').trim().toLowerCase();
+    if (!username) {
+      return { success: false, error: 'Username pengguna tidak boleh kosong.' };
+    }
+
+    if (availableUsers.some(u => (u.username || '').toLowerCase() === username)) {
+      return { success: false, error: `Username "${username}" sudah digunakan akun lain.` };
+    }
+
+    const newUser: UserProfile = {
+      ...userData,
+      id: `user-${Date.now().toString().slice(-6)}`,
+      username,
+      status: userData.status || 'Aktif',
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    setAvailableUsers(prev => [...prev, newUser]);
+    addToast('success', 'Pengguna Ditambahkan', `Akun ${newUser.name} (${newUser.username}) berhasil didaftarkan.`);
+    return { success: true };
+  };
+
+  const updateUser = (id: string, updated: Partial<UserProfile>): { success: boolean; error?: string } => {
+    if (updated.username) {
+      const cleanUname = updated.username.trim().toLowerCase();
+      if (availableUsers.some(u => u.id !== id && (u.username || '').toLowerCase() === cleanUname)) {
+        return { success: false, error: `Username "${cleanUname}" sudah digunakan akun lain.` };
+      }
+    }
+
+    setAvailableUsers(prev => prev.map(u => {
+      if (u.id === id) {
+        const merged = { ...u, ...updated };
+        if (currentUser.id === id) {
+          setCurrentUser(merged);
+        }
+        return merged;
+      }
+      return u;
+    }));
+
+    addToast('success', 'Akun Diperbarui', 'Data profil & hak akses pengguna berhasil disimpan.');
+    return { success: true };
+  };
+
+  const deleteUser = (id: string): { success: boolean; error?: string } => {
+    if (currentUser.id === id) {
+      return { success: false, error: 'Tidak dapat menghapus akun yang sedang aktif login.' };
+    }
+
+    const target = availableUsers.find(u => u.id === id);
+    if (!target) {
+      return { success: false, error: 'Pengguna tidak ditemukan.' };
+    }
+
+    // Ensure at least one admin remains
+    if (target.role === 'admin') {
+      const adminCount = availableUsers.filter(u => u.role === 'admin').length;
+      if (adminCount <= 1) {
+        return { success: false, error: 'Sistem harus memiliki minimal satu akun Administrator/Kepala Sekolah.' };
+      }
+    }
+
+    setAvailableUsers(prev => prev.filter(u => u.id !== id));
+    addToast('info', 'Akun Dihapus', `Akun ${target.name} telah dihapus dari sistem.`);
+    return { success: true };
+  };
+
+  const toggleUserStatus = (id: string) => {
+    if (currentUser.id === id) {
+      addToast('warning', 'Peringatan', 'Tidak dapat menonaktifkan akun sendiri yang sedang aktif.');
+      return;
+    }
+
+    setAvailableUsers(prev => prev.map(u => {
+      if (u.id === id) {
+        const nextStatus = u.status === 'Nonaktif' ? 'Aktif' : 'Nonaktif';
+        addToast('info', 'Status Akun Diubah', `Akun ${u.name} sekarang berstatus ${nextStatus}.`);
+        return { ...u, status: nextStatus };
+      }
+      return u;
+    }));
+  };
+
+  const resetUserPassword = (id: string, newPass: string) => {
+    const cleanPass = newPass.trim();
+    if (!cleanPass) {
+      addToast('error', 'Gagal', 'Kata sandi baru tidak boleh kosong.');
+      return;
+    }
+
+    setAvailableUsers(prev => prev.map(u => {
+      if (u.id === id) {
+        return { ...u, password: cleanPass };
+      }
+      return u;
+    }));
+
+    if (currentUser.id === id) {
+      setCurrentUser(prev => ({ ...prev, password: cleanPass }));
+    }
+
+    addToast('success', 'Sandi Direset', 'Kata sandi akun pengguna berhasil diperbarui.');
+  };
+
+  const updateRolePermissions = (role: UserRole, tabs: ActiveTab[]) => {
+    setRolePermissions(prev => ({
+      ...prev,
+      [role]: tabs
+    }));
+    addToast('success', 'Hak Akses Disimpan', `Pengaturan menu untuk peran ${role.toUpperCase()} berhasil diperbarui.`);
+  };
+
+  const resetRolePermissionsToDefault = () => {
+    setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
+    addToast('info', 'Reset Hak Akses', 'Matriks hak akses menu dikembalikan ke konfigurasi standar sekolah.');
+  };
+
   // Authentication Methods
   const login = (identifier: string, password: string): { success: boolean; error?: string } => {
     const cleanId = identifier.trim().toLowerCase().replace(/\s+/g, '');
@@ -414,26 +611,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!matchedUser) {
       return { 
         success: false, 
-        error: 'Akun tidak ditemukan. Gunakan ID/Email demo: guru4a, admin, atau siswa01' 
+        error: 'Akun tidak ditemukan. Gunakan ID/Email demo: guru4a, admin, gurupai, atau siswa01' 
+      };
+    }
+
+    // Check account active status
+    if (matchedUser.status === 'Nonaktif') {
+      return {
+        success: false,
+        error: 'Akun ini sedang DINONAKTIFKAN oleh Administrator. Silakan hubungi Kepala Sekolah/Admin.'
       };
     }
 
     // Check password
     const validPassword = matchedUser.password || '123456';
-    if (cleanPassword !== validPassword && cleanPassword !== 'guru123' && cleanPassword !== 'admin123' && cleanPassword !== 'siswa123' && cleanPassword !== '123456') {
+    if (cleanPassword !== validPassword && cleanPassword !== 'guru123' && cleanPassword !== 'admin123' && cleanPassword !== 'mapel123' && cleanPassword !== 'siswa123' && cleanPassword !== '123456') {
       return { 
         success: false, 
         error: 'Kata sandi tidak sesuai. Silakan periksa kembali atau gunakan akun demo.' 
       };
     }
 
-    setCurrentUser(matchedUser);
+    // Update lastLogin timestamp
+    const nowIso = new Date().toISOString();
+    const updatedUser = { ...matchedUser, lastLogin: nowIso };
+    
+    setAvailableUsers(prev => prev.map(u => u.id === matchedUser.id ? updatedUser : u));
+    setCurrentUser(updatedUser);
     setIsAuthenticated(true);
-    setCurrentTab('dashboard');
-    localStorage.setItem(STORAGE_PREFIX + 'isAuthenticated', JSON.stringify(true));
-    localStorage.setItem(STORAGE_PREFIX + 'currentUser', JSON.stringify(matchedUser));
+    
+    // Check if the current tab is permitted for this user
+    if (!hasPermission(currentTab, updatedUser)) {
+      const userAllowed = rolePermissions[updatedUser.role] || DEFAULT_ROLE_PERMISSIONS[updatedUser.role] || ['dashboard'];
+      setCurrentTab(userAllowed[0] || 'dashboard');
+    }
 
-    addToast('success', 'Berhasil Masuk', `Selamat datang di Dashboard, ${matchedUser.name}!`);
+    localStorage.setItem(STORAGE_PREFIX + 'isAuthenticated', JSON.stringify(true));
+    localStorage.setItem(STORAGE_PREFIX + 'currentUser', JSON.stringify(updatedUser));
+
+    addToast('success', 'Berhasil Masuk', `Selamat datang di Dashboard Administrasi SD, ${matchedUser.name}!`);
     return { success: true };
   };
 
@@ -447,6 +663,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const switchUserRole = (role: UserRole) => {
     const target = availableUsers.find(u => u.role === role) || availableUsers[0];
     setCurrentUser(target);
+
+    // Verify current tab permissions
+    if (!hasPermission(currentTab, target)) {
+      const allowed = rolePermissions[target.role] || DEFAULT_ROLE_PERMISSIONS[target.role] || ['dashboard'];
+      setCurrentTab(allowed[0] || 'dashboard');
+    }
+
     addToast('info', 'Role Diperbarui', `Beralih ke akun ${target.name} (${target.title})`);
   };
 
@@ -562,9 +785,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const deleteSubject = (id: string) => {
+    const target = subjects.find(s => s.id === id);
     setSubjects(prev => prev.filter(s => s.id !== id));
+    setTujuanPembelajaranList(prev => prev.filter(tp => tp.mapelId !== id));
     setGrades(prev => prev.filter(g => g.mapelId !== id));
-    addToast('info', 'Mata Pelajaran Dihapus', 'Mata pelajaran telah dihapus.');
+    addToast('info', 'Mata Pelajaran Dihapus', `Mata pelajaran ${target?.nama || ''} dan seluruh TP terkait telah dihapus.`);
+  };
+
+  // Tujuan Pembelajaran (TP) CRUD
+  const addTP = (tpData: Omit<TujuanPembelajaran, 'id'>) => {
+    const newTP: TujuanPembelajaran = {
+      ...tpData,
+      id: `tp-${Date.now().toString().slice(-6)}`
+    };
+    setTujuanPembelajaranList(prev => [...prev, newTP]);
+    addToast('success', 'Tujuan Pembelajaran Ditambahkan', `${newTP.kode}: ${newTP.lingkupMateri} berhasil ditambahkan.`);
+  };
+
+  const updateTP = (id: string, updated: Partial<TujuanPembelajaran>) => {
+    setTujuanPembelajaranList(prev => prev.map(tp => tp.id === id ? { ...tp, ...updated } : tp));
+    addToast('success', 'TP Diperbarui', 'Data Tujuan Pembelajaran berhasil disimpan.');
+  };
+
+  const deleteTP = (id: string) => {
+    const target = tujuanPembelajaranList.find(tp => tp.id === id);
+    setTujuanPembelajaranList(prev => prev.filter(tp => tp.id !== id));
+    addToast('warning', 'TP Dihapus', `${target?.kode || 'Tujuan Pembelajaran'} telah dihapus.`);
+  };
+
+  const getTPBySubject = (mapelId: string) => {
+    return tujuanPembelajaranList.filter(tp => tp.mapelId === mapelId);
+  };
+
+  const resetTPToDefault = () => {
+    setTujuanPembelajaranList(INITIAL_TUJUAN_PEMBELAJARAN);
+    addToast('info', 'Reset TP', 'Daftar Tujuan Pembelajaran dikembalikan ke standar kurikulum.');
   };
 
   // Attendance
@@ -608,11 +863,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const getAttendanceByDate = (tanggal: string) => {
-    return attendanceRecords.filter(r => r.tanggal === tanggal);
+    return (attendanceRecords || []).filter(r => r.tanggal === tanggal);
   };
 
   const getStudentAttendanceStats = (siswaId: string, monthPrefix?: string) => {
-    const filtered = attendanceRecords.filter(r => {
+    const filtered = (attendanceRecords || []).filter(r => {
       const matchStudent = r.siswaId === siswaId;
       if (!matchStudent) return false;
       if (monthPrefix) return r.tanggal.startsWith(monthPrefix);
@@ -640,7 +895,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Grade Management
   const saveGrade = (siswaId: string, mapelId: string, jenis: AssessmentType, nilai: number, capaianKompetensi?: string) => {
     setGrades(prev => {
-      const idx = prev.findIndex(g => g.siswaId === siswaId && g.mapelId === mapelId && g.jenis === jenis);
+      const currentList = prev || [];
+      const idx = currentList.findIndex(g => g.siswaId === siswaId && g.mapelId === mapelId && g.jenis === jenis);
       const defaultCapaian = nilai >= 85
         ? 'Menunjukkan penguasaan sangat baik dalam mencapai seluruh tujuan pembelajaran.'
         : nilai >= 75
@@ -648,7 +904,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         : 'Perlu bimbingan dan pendampingan intensif untuk penguasaan konsep.';
 
       if (idx >= 0) {
-        const copy = [...prev];
+        const copy = [...currentList];
         copy[idx] = {
           ...copy[idx],
           nilai,
@@ -657,7 +913,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return copy;
       } else {
         return [
-          ...prev,
+          ...currentList,
           {
             id: `grd-${siswaId}-${mapelId}-${jenis}`,
             siswaId,
@@ -679,7 +935,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const getStudentGradeSummary = (siswaId: string, mapelId: string) => {
-    const studentGrades = grades.filter(g => g.siswaId === siswaId && g.mapelId === mapelId);
+    const studentGrades = (grades || []).filter(g => g.siswaId === siswaId && g.mapelId === mapelId);
     const formatifs = studentGrades.filter(g => g.jenis.startsWith('Formatif_'));
     const sts = studentGrades.find(g => g.jenis === 'Sumatif_STS')?.nilai || 0;
     const sas = studentGrades.find(g => g.jenis === 'Sumatif_SAS')?.nilai || 0;
@@ -698,7 +954,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     else if (nilaiAkhir >= 80) predikat = 'B';
     else if (nilaiAkhir >= 70) predikat = 'C';
 
-    const subject = subjects.find(s => s.id === mapelId);
+    const subject = (subjects || []).find(s => s.id === mapelId);
     const kktp = subject?.kktp || 75;
     const ketercapaian: 'Tuntas' | 'Belum Tuntas' = nilaiAkhir >= kktp ? 'Tuntas' : 'Belum Tuntas';
 
@@ -725,7 +981,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const getAllGradesForStudent = (siswaId: string) => {
-    return subjects.map(subject => {
+    return (subjects || []).map(subject => {
       const summary = getStudentGradeSummary(siswaId, subject.id);
       return {
         subject,
@@ -1084,6 +1340,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setStudents(INITIAL_STUDENTS);
     setTeachers(INITIAL_TEACHERS);
     setSubjects(INITIAL_SUBJECTS);
+    setTujuanPembelajaranList(INITIAL_TUJUAN_PEMBELAJARAN);
     setGrades(generateInitialGrades());
     setAttendanceRecords(generateInitialAttendance());
     setJournals(INITIAL_JOURNALS);
@@ -1095,6 +1352,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCleaningDuties(INITIAL_DUTIES);
     setEvents(INITIAL_EVENTS);
     setExtracurriculars(INITIAL_EXTRACURRICULARS);
+    setAvailableUsers(INITIAL_USERS);
+    setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
     setCurrentUser(INITIAL_USERS[0]);
     addToast('info', 'Reset Berhasil', 'Seluruh data administrasi telah dikembalikan ke kondisi awal.');
   };
@@ -1103,9 +1362,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const backupData = {
       exportedAt: new Date().toISOString(),
       schoolInfo,
+      users: availableUsers,
+      rolePermissions,
       students,
       teachers,
       subjects,
+      tujuanPembelajaran: tujuanPembelajaranList,
       grades,
       attendanceRecords,
       journals,
@@ -1134,9 +1396,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const data = JSON.parse(jsonStr);
       if (data.students && Array.isArray(data.students)) {
         if (data.schoolInfo) setSchoolInfo(data.schoolInfo);
+        if (data.users && Array.isArray(data.users)) setAvailableUsers(data.users);
+        if (data.rolePermissions) setRolePermissions(data.rolePermissions);
         if (data.students) setStudents(data.students);
         if (data.teachers) setTeachers(data.teachers);
         if (data.subjects) setSubjects(data.subjects);
+        if (data.tujuanPembelajaran && Array.isArray(data.tujuanPembelajaran)) setTujuanPembelajaranList(data.tujuanPembelajaran);
         if (data.grades) setGrades(data.grades);
         if (data.attendanceRecords) setAttendanceRecords(data.attendanceRecords);
         if (data.journals) setJournals(data.journals);
@@ -1165,6 +1430,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCurrentTab,
         currentUser,
         availableUsers,
+        addUser,
+        updateUser,
+        deleteUser,
+        toggleUserStatus,
+        resetUserPassword,
+        rolePermissions,
+        updateRolePermissions,
+        resetRolePermissionsToDefault,
+        hasPermission,
         switchUserRole,
         setCurrentUser,
         isAuthenticated,
@@ -1188,6 +1462,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addSubject,
         updateSubject,
         deleteSubject,
+        tujuanPembelajaranList,
+        addTP,
+        updateTP,
+        deleteTP,
+        getTPBySubject,
+        resetTPToDefault,
         attendanceRecords,
         markAttendance,
         bulkMarkAttendance,

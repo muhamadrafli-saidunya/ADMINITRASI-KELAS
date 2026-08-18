@@ -24,24 +24,27 @@ export const RaportView: React.FC = () => {
     currentUser
   } = useApp();
 
+  const safeStudents = students || [];
+  const safeSubjects = subjects || [];
+
   const [selectedStudentId, setSelectedStudentId] = useState<string>(
     currentUser.role === 'siswa' && currentUser.studentId
       ? currentUser.studentId
-      : students[0]?.id || 'std-01'
+      : safeStudents[0]?.id || 'std-01'
   );
 
-  const selectedStudent = students.find(s => s.id === selectedStudentId) || students[0];
-  const currentIndex = students.findIndex(s => s.id === selectedStudentId);
+  const selectedStudent = safeStudents.find(s => s.id === selectedStudentId) || safeStudents[0];
+  const currentIndex = safeStudents.findIndex(s => s.id === selectedStudentId);
 
   const handlePrev = () => {
-    if (currentIndex > 0) {
-      setSelectedStudentId(students[currentIndex - 1].id);
+    if (currentIndex > 0 && safeStudents[currentIndex - 1]) {
+      setSelectedStudentId(safeStudents[currentIndex - 1].id);
     }
   };
 
   const handleNext = () => {
-    if (currentIndex < students.length - 1) {
-      setSelectedStudentId(students[currentIndex + 1].id);
+    if (currentIndex < safeStudents.length - 1 && safeStudents[currentIndex + 1]) {
+      setSelectedStudentId(safeStudents[currentIndex + 1].id);
     }
   };
 

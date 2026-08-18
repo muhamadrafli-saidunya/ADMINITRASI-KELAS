@@ -109,12 +109,15 @@ export const JadwalPelajaranAdminTab: React.FC<JadwalPelajaranAdminTabProps> = (
   // Duplicate Day State
   const [duplicateTargetDay, setDuplicateTargetDay] = useState<'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat' | 'Sabtu'>('Selasa');
 
+  const safeSchedule = schedule || [];
+  const safeSubjects = subjects || [];
+
   // Filtered by selected day and search
-  const daySchedule = schedule
+  const daySchedule = safeSchedule
     .filter(s => s.hari === selectedDay)
     .filter(s => {
       if (!searchQuery.trim()) return true;
-      const sub = subjects.find(item => item.id === s.mapelId);
+      const sub = safeSubjects.find(item => item.id === s.mapelId);
       const subName = sub?.nama || '';
       return (
         subName.toLowerCase().includes(searchQuery.toLowerCase()) ||

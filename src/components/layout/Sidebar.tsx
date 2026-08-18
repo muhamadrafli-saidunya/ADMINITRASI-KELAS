@@ -40,7 +40,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     students,
     teachers,
     getCurrentCashBalance,
-    logout
+    logout,
+    hasPermission
   } = useApp();
 
   const navItems: Array<{
@@ -49,7 +50,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     icon: React.ReactNode;
     badge?: string | number;
     badgeColor?: string;
-    rolesAllowed?: Array<'admin' | 'wali_kelas' | 'siswa'>;
   }> = [
     {
       id: 'dashboard',
@@ -68,8 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Data Guru & Tendik',
       icon: <UserCheck className="h-5 w-5" />,
       badge: teachers.length,
-      badgeColor: 'bg-purple-500/20 text-purple-300',
-      rolesAllowed: ['admin', 'wali_kelas']
+      badgeColor: 'bg-purple-500/20 text-purple-300'
     },
     {
       id: 'presensi',
@@ -89,8 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       id: 'jurnal',
       label: 'Jurnal Mengajar Guru',
-      icon: <BookOpenCheck className="h-5 w-5" />,
-      rolesAllowed: ['admin', 'wali_kelas']
+      icon: <BookOpenCheck className="h-5 w-5" />
     },
     {
       id: 'jadwal',
@@ -107,8 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       id: 'inventaris',
       label: 'Inventaris Kelas (KIR)',
-      icon: <Boxes className="h-5 w-5" />,
-      rolesAllowed: ['admin', 'wali_kelas']
+      icon: <Boxes className="h-5 w-5" />
     },
     {
       id: 'konseling',
@@ -120,21 +117,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'AI Asisten Wali Kelas',
       icon: <Sparkles className="h-5 w-5 text-amber-400" />,
       badge: 'Gemini',
-      badgeColor: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold',
-      rolesAllowed: ['admin', 'wali_kelas']
+      badgeColor: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold'
     },
     {
       id: 'pengaturan',
-      label: 'Pengaturan & Backup',
-      icon: <Settings className="h-5 w-5" />,
-      rolesAllowed: ['admin', 'wali_kelas']
+      label: 'Pengaturan & Hak Akses',
+      icon: <Settings className="h-5 w-5" />
     }
   ];
 
-  const filteredNavItems = navItems.filter(item => {
-    if (!item.rolesAllowed) return true;
-    return item.rolesAllowed.includes(currentUser.role);
-  });
+  const filteredNavItems = navItems.filter(item => hasPermission(item.id));
 
   const handleNavClick = (tab: ActiveTab) => {
     setCurrentTab(tab);
@@ -195,7 +187,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="flex items-center gap-1">
                 <ShieldCheck className="h-3 w-3 text-blue-400" />
                 <span className="text-[10px] text-slate-300 font-medium capitalize">
-                  {currentUser.role === 'wali_kelas' ? 'Wali Kelas' : currentUser.role === 'admin' ? 'Kepala Sekolah' : 'Siswa / Ortu'}
+                  {currentUser.role === 'wali_kelas' 
+                    ? 'Wali Kelas' 
+                    : currentUser.role === 'admin' 
+                    ? 'Kepala Sekolah' 
+                    : currentUser.role === 'guru_mapel'
+                    ? 'Guru Mapel'
+                    : 'Siswa / Ortu'}
                 </span>
               </div>
             </div>

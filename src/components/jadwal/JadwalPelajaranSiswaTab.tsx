@@ -44,11 +44,12 @@ export const JadwalPelajaranSiswaTab: React.FC<JadwalPelajaranSiswaTabProps> = (
 
   // Find currently logged-in student info (if role is siswa)
   const currentStudent = useMemo(() => {
+    const safeStudents = students || [];
     if (currentUser.role !== 'siswa') return null;
     return (
-      students.find(s => s.id === currentUser.id) ||
-      students.find(s => s.nama.toLowerCase().includes(currentUser.name.toLowerCase())) ||
-      students[0]
+      safeStudents.find(s => s.id === currentUser.id) ||
+      safeStudents.find(s => s.nama.toLowerCase().includes(currentUser.name.toLowerCase())) ||
+      safeStudents[0]
     );
   }, [currentUser, students]);
 
@@ -61,28 +62,32 @@ export const JadwalPelajaranSiswaTab: React.FC<JadwalPelajaranSiswaTabProps> = (
 
   // Today's schedule items
   const todaySchedule = useMemo(() => {
+    const safeSchedule = schedule || [];
     const target = daysOfWeek.includes(todayIndonesian as any) ? todayIndonesian : 'Senin';
-    return schedule.filter(s => s.hari === target).sort((a, b) => a.jamKe - b.jamKe);
+    return safeSchedule.filter(s => s.hari === target).sort((a, b) => a.jamKe - b.jamKe);
   }, [schedule, todayIndonesian]);
 
   // Is current student on cleaning duty today?
   const todayDuty = useMemo(() => {
+    const safeDuties = cleaningDuties || [];
     const target = daysOfWeek.includes(todayIndonesian as any) ? todayIndonesian : 'Senin';
-    return cleaningDuties.find(d => d.hari === target);
+    return safeDuties.find(d => d.hari === target);
   }, [cleaningDuties, todayIndonesian]);
 
   const isStudentDutyToday = useMemo(() => {
-    if (!currentStudent || !todayDuty) return false;
+    if (!currentStudent || !todayDuty || !Array.isArray(todayDuty.siswaIds)) return false;
     return todayDuty.siswaIds.includes(currentStudent.id);
   }, [currentStudent, todayDuty]);
 
   // Filtered schedule for display
   const filteredDailySchedule = useMemo(() => {
-    return schedule
+    const safeSchedule = schedule || [];
+    const safeSubjects = subjects || [];
+    return safeSchedule
       .filter(s => s.hari === selectedDay)
       .filter(s => {
         if (!searchQuery.trim()) return true;
-        const sub = subjects.find(item => item.id === s.mapelId);
+        const sub = safeSubjects.find(item => item.id === s.mapelId);
         const subName = sub?.nama || '';
         return (
           subName.toLowerCase().includes(searchQuery.toLowerCase()) ||

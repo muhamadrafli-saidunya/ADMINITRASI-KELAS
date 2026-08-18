@@ -55,20 +55,22 @@ export const DataGuruView: React.FC = () => {
 
   // Metrics Calculation
   const metrics = useMemo(() => {
-    const total = teachers.length;
-    const pns = teachers.filter(t => t.statusKepegawaian === 'PNS').length;
-    const pppk = teachers.filter(t => t.statusKepegawaian === 'PPPK').length;
-    const honorer = teachers.filter(t => t.statusKepegawaian === 'GTT / Honorer' || t.statusKepegawaian === 'Guru Tetap Yayasan').length;
-    const aktif = teachers.filter(t => t.statusAktif === 'Aktif').length;
-    const guruKelas = teachers.filter(t => t.jenisGuru === 'Guru Kelas').length;
-    const guruMapel = teachers.filter(t => t.jenisGuru === 'Guru Mapel').length;
+    const safeTeachers = teachers || [];
+    const total = safeTeachers.length;
+    const pns = safeTeachers.filter(t => t.statusKepegawaian === 'PNS').length;
+    const pppk = safeTeachers.filter(t => t.statusKepegawaian === 'PPPK').length;
+    const honorer = safeTeachers.filter(t => t.statusKepegawaian === 'GTT / Honorer' || t.statusKepegawaian === 'Guru Tetap Yayasan').length;
+    const aktif = safeTeachers.filter(t => t.statusAktif === 'Aktif').length;
+    const guruKelas = safeTeachers.filter(t => t.jenisGuru === 'Guru Kelas').length;
+    const guruMapel = safeTeachers.filter(t => t.jenisGuru === 'Guru Mapel').length;
 
     return { total, pns, pppk, honorer, aktif, guruKelas, guruMapel };
   }, [teachers]);
 
   // Filtering Logic
   const filteredTeachers = useMemo(() => {
-    return teachers.filter(teacher => {
+    const safeTeachers = teachers || [];
+    return safeTeachers.filter(teacher => {
       const q = searchQuery.toLowerCase();
       const matchSearch =
         teacher.nama.toLowerCase().includes(q) ||

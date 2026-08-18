@@ -48,10 +48,11 @@ export const InventarisView: React.FC = () => {
     keterangan: 'Tersedia di dalam ruang kelas 4A'
   });
 
-  const totalUnits = inventory.reduce((sum, item) => sum + item.jumlah, 0);
-  const baikCount = inventory.filter(i => i.kondisi === 'Baik').reduce((sum, i) => sum + i.jumlah, 0);
-  const rusakRinganCount = inventory.filter(i => i.kondisi === 'Rusak Ringan').reduce((sum, i) => sum + i.jumlah, 0);
-  const rusakBeratCount = inventory.filter(i => i.kondisi === 'Rusak Berat').reduce((sum, i) => sum + i.jumlah, 0);
+  const safeInventory = inventory || [];
+  const totalUnits = safeInventory.reduce((sum, item) => sum + item.jumlah, 0);
+  const baikCount = safeInventory.filter(i => i.kondisi === 'Baik').reduce((sum, i) => sum + i.jumlah, 0);
+  const rusakRinganCount = safeInventory.filter(i => i.kondisi === 'Rusak Ringan').reduce((sum, i) => sum + i.jumlah, 0);
+  const rusakBeratCount = safeInventory.filter(i => i.kondisi === 'Rusak Berat').reduce((sum, i) => sum + i.jumlah, 0);
 
   const handleOpenAdd = () => {
     setFormData({

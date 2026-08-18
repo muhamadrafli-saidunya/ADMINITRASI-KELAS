@@ -3,6 +3,7 @@ import {
   Student, 
   Teacher,
   Subject, 
+  TujuanPembelajaran,
   GradeRecord, 
   AttendanceRecord, 
   TeachingJournal, 
@@ -15,22 +16,12 @@ import {
   CleaningDuty,
   UserProfile,
   Extracurricular,
-  AssessmentType
+  AssessmentType,
+  RolePermissions,
+  MenuItemPermission
 } from '../types';
 
 export const INITIAL_USERS: UserProfile[] = [
-  {
-    id: 'user-guru-1',
-    username: 'guru4a',
-    password: 'guru123',
-    name: 'Sri Wahyuni, S.Pd., Gr.',
-    email: 'sri.wahyuni@sdn.sch.id',
-    role: 'wali_kelas',
-    avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80',
-    title: 'Wali Kelas 4A & Guru Pembina',
-    nipOrNisn: '19880412 201201 2 018',
-    classAssigned: 'Kelas 4A'
-  },
   {
     id: 'user-admin-1',
     username: 'admin',
@@ -41,7 +32,40 @@ export const INITIAL_USERS: UserProfile[] = [
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
     title: 'Kepala Sekolah / Pengawas Dapodik',
     nipOrNisn: '19680315 199303 1 005',
-    classAssigned: 'Semua Kelas (1-6)'
+    classAssigned: 'Semua Kelas (1-6)',
+    status: 'Aktif',
+    phone: '081234567890',
+    createdAt: '2024-01-10'
+  },
+  {
+    id: 'user-guru-1',
+    username: 'guru4a',
+    password: 'guru123',
+    name: 'Sri Wahyuni, S.Pd., Gr.',
+    email: 'sri.wahyuni@sdn.sch.id',
+    role: 'wali_kelas',
+    avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80',
+    title: 'Wali Kelas 4A & Guru Pembina',
+    nipOrNisn: '19880412 201201 2 018',
+    classAssigned: 'Kelas 4A',
+    status: 'Aktif',
+    phone: '081398765432',
+    createdAt: '2024-01-12'
+  },
+  {
+    id: 'user-mapel-1',
+    username: 'gurupai',
+    password: 'mapel123',
+    name: 'Muhammad Hidayat, S.Pd.I.',
+    email: 'hidayat.pai@sdn.sch.id',
+    role: 'guru_mapel',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    title: 'Guru Pendidikan Agama Islam & BP',
+    nipOrNisn: '19900820 201903 1 008',
+    classAssigned: 'Kelas 1-6 (Mapel PAI)',
+    status: 'Aktif',
+    phone: '081287654321',
+    createdAt: '2024-01-15'
   },
   {
     id: 'user-siswa-1',
@@ -53,7 +77,156 @@ export const INITIAL_USERS: UserProfile[] = [
     avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
     title: 'Siswa Kelas 4A (No. Absen 01)',
     nipOrNisn: '0123849102',
-    classAssigned: 'Kelas 4A'
+    classAssigned: 'Kelas 4A',
+    status: 'Aktif',
+    phone: '085712345678',
+    createdAt: '2024-01-20'
+  }
+];
+
+export const DEFAULT_ROLE_PERMISSIONS: RolePermissions = {
+  admin: [
+    'dashboard',
+    'siswa',
+    'guru',
+    'presensi',
+    'nilai',
+    'raport',
+    'jurnal',
+    'jadwal',
+    'kas',
+    'inventaris',
+    'konseling',
+    'ai_assistant',
+    'pengaturan'
+  ],
+  wali_kelas: [
+    'dashboard',
+    'siswa',
+    'guru',
+    'presensi',
+    'nilai',
+    'raport',
+    'jurnal',
+    'jadwal',
+    'kas',
+    'inventaris',
+    'konseling',
+    'ai_assistant',
+    'pengaturan'
+  ],
+  guru_mapel: [
+    'dashboard',
+    'siswa',
+    'guru',
+    'presensi',
+    'nilai',
+    'jurnal',
+    'jadwal'
+  ],
+  siswa: [
+    'dashboard',
+    'siswa',
+    'presensi',
+    'nilai',
+    'raport',
+    'jadwal',
+    'kas',
+    'konseling'
+  ]
+};
+
+export const MENU_PERMISSIONS_LIST: MenuItemPermission[] = [
+  {
+    id: 'dashboard',
+    label: 'Dashboard Utama',
+    category: 'Utama',
+    description: 'Ringkasan statistik kelas, kehadiran harian, grafik nilai, dan agenda aktif',
+    defaultRoles: ['admin', 'wali_kelas', 'guru_mapel', 'siswa']
+  },
+  {
+    id: 'siswa',
+    label: 'Data Siswa & Buku Induk',
+    category: 'Akademik',
+    description: 'Buku induk siswa, biodata lengkap, data orang tua, dan mutasi',
+    defaultRoles: ['admin', 'wali_kelas', 'guru_mapel', 'siswa']
+  },
+  {
+    id: 'guru',
+    label: 'Data Guru & DUK Tendik',
+    category: 'Administrasi',
+    description: 'Daftar urut kepegawaian pendidik, profil guru kelas & mapel, SK, dan NIP',
+    defaultRoles: ['admin', 'wali_kelas', 'guru_mapel']
+  },
+  {
+    id: 'presensi',
+    label: 'Presensi & Absensi Siswa',
+    category: 'Akademik',
+    description: 'Pencatatan kehadiran harian (H/S/I/A), rekap bulanan, dan cetak persentase',
+    defaultRoles: ['admin', 'wali_kelas', 'guru_mapel', 'siswa']
+  },
+  {
+    id: 'nilai',
+    label: 'Daftar Nilai & Capaian TP',
+    category: 'Akademik',
+    description: 'Penginputan asesmen formatif, sumatif STS/SAS, rentang nilai, dan predikat',
+    defaultRoles: ['admin', 'wali_kelas', 'guru_mapel', 'siswa']
+  },
+  {
+    id: 'raport',
+    label: 'Cetak Rapor Kurikulum Merdeka',
+    category: 'Akademik',
+    description: 'Cetak lembar laporan hasil belajar (rapor), deskripsi capaian, dan ekskul',
+    defaultRoles: ['admin', 'wali_kelas', 'siswa']
+  },
+  {
+    id: 'jurnal',
+    label: 'Buku Jurnal Mengajar Harian',
+    category: 'Akademik',
+    description: 'Catatan materi ajar, tujuan pembelajaran harian, dan tindak lanjut guru',
+    defaultRoles: ['admin', 'wali_kelas', 'guru_mapel']
+  },
+  {
+    id: 'jadwal',
+    label: 'Jadwal Pelajaran & Regu Piket',
+    category: 'Administrasi',
+    description: 'Jadwal pelajaran mingguan, kalender pendidikan, dan pembagian tugas piket kelas',
+    defaultRoles: ['admin', 'wali_kelas', 'guru_mapel', 'siswa']
+  },
+  {
+    id: 'kas',
+    label: 'Buku Kas & Iuran Kelas',
+    category: 'Layanan',
+    description: 'Pencatatan kas masuk/keluar, tabungan/iuran siswa mingguan, dan laporan saldo',
+    defaultRoles: ['admin', 'wali_kelas', 'siswa']
+  },
+  {
+    id: 'inventaris',
+    label: 'Inventaris Ruang Kelas (KIR)',
+    category: 'Administrasi',
+    description: 'Kartu inventaris sarana prasarana kelas, kondisi barang, dan pelaporan',
+    defaultRoles: ['admin', 'wali_kelas']
+  },
+  {
+    id: 'konseling',
+    label: 'Catatan Bimbingan & Prestasi',
+    category: 'Layanan',
+    description: 'Buku bimbingan perilaku, penanganan kasus, dan pencatatan piagam prestasi siswa',
+    defaultRoles: ['admin', 'wali_kelas', 'siswa']
+  },
+  {
+    id: 'ai_assistant',
+    label: 'AI Asisten Mengajar & Rapor',
+    category: 'Layanan',
+    description: 'Generator modul ajar cerdas, narasi deskripsi rapor, dan penyusun soal otomatis',
+    defaultRoles: ['admin', 'wali_kelas']
+  },
+  {
+    id: 'pengaturan',
+    label: 'Pengaturan, Akun & Hak Akses',
+    category: 'Sistem',
+    description: 'Manajemen pengguna login, matriks hak akses menu (RBAC), dan backup database',
+    defaultRoles: ['admin', 'wali_kelas']
   }
 ];
 
@@ -324,6 +497,15 @@ export const INITIAL_STUDENTS: Student[] = [
 
 export const INITIAL_SUBJECTS: Subject[] = [
   {
+    id: 'mapel-05',
+    kode: 'PAI',
+    nama: 'Pendidikan Agama & Budi Pekerti',
+    kelompok: 'Umum',
+    kktp: 78,
+    guruPengampu: 'Ust. Ahmad Fauzan, S.Pd.I',
+    iconName: 'HeartHandshake'
+  },
+  {
     id: 'mapel-01',
     kode: 'PPKn',
     nama: 'Pendidikan Pancasila',
@@ -360,15 +542,6 @@ export const INITIAL_SUBJECTS: Subject[] = [
     iconName: 'Compass'
   },
   {
-    id: 'mapel-05',
-    kode: 'PAI',
-    nama: 'Pendidikan Agama & Budi Pekerti',
-    kelompok: 'Umum',
-    kktp: 78,
-    guruPengampu: 'Ust. Ahmad Fauzan, S.Pd.I',
-    iconName: 'HeartHandshake'
-  },
-  {
     id: 'mapel-06',
     kode: 'PJOK',
     nama: 'Pendidikan Jasmani, Olahraga, & Kesehatan',
@@ -403,6 +576,302 @@ export const INITIAL_SUBJECTS: Subject[] = [
     kktp: 75,
     guruPengampu: 'Sri Wahyuni, S.Pd., Gr.',
     iconName: 'Building2'
+  }
+];
+
+export const INITIAL_TUJUAN_PEMBELAJARAN: TujuanPembelajaran[] = [
+  // PPKn (mapel-01)
+  {
+    id: 'tp-ppkn-01',
+    mapelId: 'mapel-01',
+    kode: 'TP 1',
+    lingkupMateri: 'Bab 1: Pancasila Sebagai Nilai Kehidupan',
+    deskripsi: 'Menjelaskan makna dan keterkaitan sila-sila Pancasila dalam kehidupan sehari-hari.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Sangat menguasai pemahaman makna dan keterkaitan sila-sila Pancasila',
+    ringkasanRaporPerluBimbingan: 'Perlu bimbingan dalam menerapkan nilai sila-sila Pancasila sehari-hari'
+  },
+  {
+    id: 'tp-ppkn-02',
+    mapelId: 'mapel-01',
+    kode: 'TP 2',
+    lingkupMateri: 'Bab 1: Penerapan Nilai Pancasila',
+    deskripsi: 'Menerapkan nilai-nilai Pancasila di lingkungan keluarga, sekolah, dan masyarakat.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Menunjukkan penerapan nilai Pancasila di lingkungan sekolah secara konsisten',
+    ringkasanRaporPerluBimbingan: 'Perlu pembiasaan dalam mengamalkan nilai gotong royong dan musyawarah'
+  },
+  {
+    id: 'tp-ppkn-03',
+    mapelId: 'mapel-01',
+    kode: 'TP 3',
+    lingkupMateri: 'Bab 2: Konstitusi & Norma',
+    deskripsi: 'Mengidentifikasi aturan, hak, dan kewajiban sebagai peserta didik dan anggota keluarga.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Mampu membedakan hak dan kewajiban di rumah serta di sekolah dengan tepat',
+    ringkasanRaporPerluBimbingan: 'Perlu bimbingan dalam menjalankan kewajiban piket dan tata tertib kelas'
+  },
+  {
+    id: 'tp-ppkn-04',
+    mapelId: 'mapel-01',
+    kode: 'TP 4',
+    lingkupMateri: 'Bab 2: Musyawarah dan Mufakat',
+    deskripsi: 'Menyampaikan pendapat secara santun dan menghargai perbedaan pendapat dalam musyawarah kelas.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Aktif berpartisipasi dan santun dalam musyawarah penyelesaian masalah kelas',
+    ringkasanRaporPerluBimbingan: 'Perlu dorongan rasa percaya diri saat menyampaikan argumen musyawarah'
+  },
+
+  // Bahasa Indonesia (mapel-02)
+  {
+    id: 'tp-bin-01',
+    mapelId: 'mapel-02',
+    kode: 'TP 1',
+    lingkupMateri: 'Bab 1: Menyimak & Teks Narasi',
+    deskripsi: 'Memahami ide pokok dan ide pendukung dari teks narasi yang dibacakan.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Sangat terampil menemukan gagasan pokok dan tokoh utama teks narasi',
+    ringkasanRaporPerluBimbingan: 'Perlu latihan membedakan gagasan pokok dengan kalimat penjelas'
+  },
+  {
+    id: 'tp-bin-02',
+    mapelId: 'mapel-02',
+    kode: 'TP 2',
+    lingkupMateri: 'Bab 2: Kosakata & Kamus (KBBI)',
+    deskripsi: 'Menggunakan kosakata baru bermakna denotatif dan konotatif serta mencari arti kata di kamus.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Kaya akan penguasaan kosakata baru dan mandiri dalam membuka kamus/KBBI',
+    ringkasanRaporPerluBimbingan: 'Perlu bimbingan dalam menelusuri kata dasar dan makna imbuhan'
+  },
+  {
+    id: 'tp-bin-03',
+    mapelId: 'mapel-02',
+    kode: 'TP 3',
+    lingkupMateri: 'Bab 3: Kalimat Majemuk & Wawancara',
+    deskripsi: 'Menulis teks deskripsi sederhana dan melakukan wawancara singkat dengan narasumber.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Mampu menyusun kalimat laporan deskriptif runtut dengan tanda baca tepat',
+    ringkasanRaporPerluBimbingan: 'Perlu bimbingan dalam merangkai kalimat majemuk bertingkat'
+  },
+  {
+    id: 'tp-bin-04',
+    mapelId: 'mapel-02',
+    kode: 'TP 4',
+    lingkupMateri: 'Bab 4: Teks Prosedur & Presentasi',
+    deskripsi: 'Menyajikan teks prosedur langkah-langkah membuat sesuatu secara lisan dan tulisan.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Percaya diri mempresentasikan teks petunjuk/prosedur di depan teman sekelas',
+    ringkasanRaporPerluBimbingan: 'Perlu latihan menyusun urutan langkah teks petunjuk secara kronologis'
+  },
+
+  // Matematika (mapel-03)
+  {
+    id: 'tp-mat-01',
+    mapelId: 'mapel-03',
+    kode: 'TP 1',
+    lingkupMateri: 'Bab 1: Bilangan Cacah sampai 10.000',
+    deskripsi: 'Membaca, menulis, menentukan nilai tempat, dan membandingkan bilangan cacah sampai 10.000.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 70,
+    ringkasanRaporTuntas: 'Sangat mahir membaca, menulis, dan mengurutkan bilangan cacah puluhan ribu',
+    ringkasanRaporPerluBimbingan: 'Perlu pendampingan dalam menentukan nilai tempat ribuan dan ratusan'
+  },
+  {
+    id: 'tp-mat-02',
+    mapelId: 'mapel-03',
+    kode: 'TP 2',
+    lingkupMateri: 'Bab 1: Operasi Hitung Campuran',
+    deskripsi: 'Menyelesaikan operasi penjumlahan, pengurangan, perkalian, dan pembagian bilangan cacah.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 70,
+    ringkasanRaporTuntas: 'Cepat dan teliti dalam perhitungan perkalian susun dan pembagian bersusun (porogapit)',
+    ringkasanRaporPerluBimbingan: 'Perlu penguatan konsep dasar pembagian bersusun panjang'
+  },
+  {
+    id: 'tp-mat-03',
+    mapelId: 'mapel-03',
+    kode: 'TP 3',
+    lingkupMateri: 'Bab 2: Pecahan Senilai & Desimal',
+    deskripsi: 'Membandingkan pecahan senilai dengan gambar dan mengubah bentuk pecahan biasa ke desimal.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 70,
+    ringkasanRaporTuntas: 'Memahami konsep pecahan senilai dan konversi desimal dengan visualisasi konkret',
+    ringkasanRaporPerluBimbingan: 'Perlu bantuan dalam menyederhanakan pecahan berpenyebut tidak sama'
+  },
+  {
+    id: 'tp-mat-04',
+    mapelId: 'mapel-03',
+    kode: 'TP 4',
+    lingkupMateri: 'Bab 3: Pola Gambar & Bilangan',
+    deskripsi: 'Mengidentifikasi, menduplikasi, dan mengembangkan pola bilangan membesar dan mengecil.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 70,
+    ringkasanRaporTuntas: 'Sangat tanggap menemukan keteraturan relasi rumus pola barisan bilangan',
+    ringkasanRaporPerluBimbingan: 'Perlu latihan dalam menganalisis selisih deret pola gambar'
+  },
+
+  // IPAS (mapel-04)
+  {
+    id: 'tp-ipas-01',
+    mapelId: 'mapel-04',
+    kode: 'TP 1',
+    lingkupMateri: 'Bab 1: Tumbuhan Sumber Kehidupan',
+    deskripsi: 'Mengidentifikasi bagian tubuh tumbuhan (akar, batang, daun, bunga) dan fungsinya dalam fotosintesis.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 72,
+    ringkasanRaporTuntas: 'Sangat memahami anatomi organ tumbuhan serta proses fotosintesis',
+    ringkasanRaporPerluBimbingan: 'Perlu bimbingan dalam menjelaskan fungsi stomata dan klorofil'
+  },
+  {
+    id: 'tp-ipas-02',
+    mapelId: 'mapel-04',
+    kode: 'TP 2',
+    lingkupMateri: 'Bab 2: Wujud Zat & Perubahannya',
+    deskripsi: 'Menganalisis karakteristik zat padat, cair, gas serta perubahan wujud benda dalam kehidupan.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 72,
+    ringkasanRaporTuntas: 'Mampu membuktikan perubahan wujud zat melalui eksperimen sederhana mandiri',
+    ringkasanRaporPerluBimbingan: 'Perlu bimbingan dalam membedakan proses menyublim dan mengkristal'
+  },
+  {
+    id: 'tp-ipas-03',
+    mapelId: 'mapel-04',
+    kode: 'TP 3',
+    lingkupMateri: 'Bab 3: Gaya di Sekitar Kita',
+    deskripsi: 'Mengidentifikasi ragam gaya (otot, gesek, magnet, gravitasi) dan pengaruhnya terhadap gerak benda.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 72,
+    ringkasanRaporTuntas: 'Sangat paham prinsip interaksi gaya gesek dan percepatan gerak benda',
+    ringkasanRaporPerluBimbingan: 'Perlu latihan soal kontekstual pengaruh gaya magnetik dan gravitasi'
+  },
+  {
+    id: 'tp-ipas-04',
+    mapelId: 'mapel-04',
+    kode: 'TP 4',
+    lingkupMateri: 'Bab 4: Energi yang Berubah',
+    deskripsi: 'Menjelaskan konsep transformasi energi (energi gerak, listrik, panas, cahaya, bunyi).',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 72,
+    ringkasanRaporTuntas: 'Mampu memetakan alur perubahan bentuk energi pada piranti teknologi sekitar',
+    ringkasanRaporPerluBimbingan: 'Perlu bimbingan dalam membedakan sumber energi terbarukan dan fosil'
+  },
+
+  // PAI (mapel-05)
+  {
+    id: 'tp-pai-01',
+    mapelId: 'mapel-05',
+    kode: 'TP 1',
+    lingkupMateri: 'Bab 1: Al-Qur’an Surat Al-Hujurat: 13',
+    deskripsi: 'Membaca, menghafal, dan memahami pesan pokok keragaman sebagai sunnatullah.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 78,
+    ringkasanRaporTuntas: 'Fasih membaca Al-Qur’an dengan tajwid yang baik dan hafal arti surat',
+    ringkasanRaporPerluBimbingan: 'Perlu pembiasaan makhraj huruf dan hukum bacaan ikhfa/idgham'
+  },
+  {
+    id: 'tp-pai-02',
+    mapelId: 'mapel-05',
+    kode: 'TP 2',
+    lingkupMateri: 'Bab 2: Asmaul Husna (Al-Malik, Al-Quddus)',
+    deskripsi: 'Meneladani sifat-sifat mulia Allah Swt dalam Asmaul Husna dalam perilaku terpuji sehari-hari.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 78,
+    ringkasanRaporTuntas: 'Berakhlak mulia dan mampu mengaitkan asmaul husna dengan kebersihan hati',
+    ringkasanRaporPerluBimbingan: 'Perlu dorongan dalam mengamalkan perilaku rendah hati dan ikhlas'
+  },
+
+  // PJOK (mapel-06)
+  {
+    id: 'tp-pjok-01',
+    mapelId: 'mapel-06',
+    kode: 'TP 1',
+    lingkupMateri: 'Aktivitas Pola Gerak Dasar Lokomotor',
+    deskripsi: 'Mempraktikkan variasi pola gerak dasar jalan, lari, lompat, dan loncat dengan koordinasi baik.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Memiliki kelincahan fisik dan koordinasi motorik lokomotor yang prima',
+    ringkasanRaporPerluBimbingan: 'Perlu pembinaan ritme pernapasan dan ketahanan saat lari estafet'
+  },
+  {
+    id: 'tp-pjok-02',
+    mapelId: 'mapel-06',
+    kode: 'TP 2',
+    lingkupMateri: 'Permainan Bola Besar & Kecil',
+    deskripsi: 'Mempraktikkan keterampilan manipulatif menendang, mengoper bola, dan kerja sama tim sportif.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Menunjukkan sportivitas tinggi dan penguasaan teknik dasar operan bola',
+    ringkasanRaporPerluBimbingan: 'Perlu latihan kontrol akurasi tendangan dan kekompakan tim'
+  },
+
+  // Seni Rupa (mapel-07)
+  {
+    id: 'tp-seni-01',
+    mapelId: 'mapel-07',
+    kode: 'TP 1',
+    lingkupMateri: 'Eksplorasi Garis, Bentuk & Warna',
+    deskripsi: 'Menciptakan komposisi gambar kreatif dengan memadukan unsur garis, bidang, tekstur, dan warna primer-sekunder.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Kreatif dalam memadukan gradasi warna dan eksplorasi bentuk geometris',
+    ringkasanRaporPerluBimbingan: 'Perlu bimbingan dalam teknik arsiran bayangan dan ketebalan garis'
+  },
+
+  // Bahasa Inggris (mapel-08)
+  {
+    id: 'tp-ing-01',
+    mapelId: 'mapel-08',
+    kode: 'TP 1',
+    lingkupMateri: 'Unit 1: What Are You Doing? (Activities)',
+    deskripsi: 'Expressing present continuous activities and daily classroom routines in simple English phrases.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 70,
+    ringkasanRaporTuntas: 'Fluent in speaking basic everyday classroom commands and verbs',
+    ringkasanRaporPerluBimbingan: 'Needs practice with English pronunciation and spelling verbs'
+  },
+
+  // PLBJ (mapel-09)
+  {
+    id: 'tp-plbj-01',
+    mapelId: 'mapel-09',
+    kode: 'TP 1',
+    lingkupMateri: 'Bab 1: Lagu & Gerak Tari Sirih Kuning',
+    deskripsi: 'Mengenal sejarah, menyanyikan lagu Sirih Kuning, dan mempraktikkan ragam gerak tari Betawi.',
+    semester: '1 (Ganjil)',
+    fase: 'Fase B (Kelas 4)',
+    kktp: 75,
+    ringkasanRaporTuntas: 'Hafal syair lagu Sirih Kuning dan luwes memperagakan tarian khas Betawi',
+    ringkasanRaporPerluBimbingan: 'Perlu bimbingan dalam tempo ketukan musik dan kelenturan gerak'
   }
 ];
 

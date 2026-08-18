@@ -359,7 +359,10 @@ export const ReguPiketTab: React.FC<ReguPiketTabProps> = ({ onOpenPrint }) => {
     }
   };
 
-  const totalAssignedStudents = new Set(cleaningDuties.flatMap(d => d.siswaIds)).size;
+  const safeDuties = cleaningDuties || [];
+  const safeStudents = students || [];
+
+  const totalAssignedStudents = new Set(safeDuties.flatMap(d => d.siswaIds || [])).size;
 
   return (
     <div className="space-y-6">
@@ -442,9 +445,9 @@ export const ReguPiketTab: React.FC<ReguPiketTabProps> = ({ onOpenPrint }) => {
 
       {/* Cards Grid: Semua Hari Piket */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        {cleaningDuties.map((duty, dIdx) => {
+        {safeDuties.map((duty, dIdx) => {
           const color = getDayColor(duty.hari);
-          const unassignedStudents = students.filter(s => !duty.siswaIds.includes(s.id));
+          const unassignedStudents = safeStudents.filter(s => !(duty.siswaIds || []).includes(s.id));
 
           return (
             <div

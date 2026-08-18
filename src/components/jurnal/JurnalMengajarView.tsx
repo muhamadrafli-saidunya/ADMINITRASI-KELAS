@@ -96,8 +96,11 @@ export const JurnalMengajarView: React.FC = () => {
     }
   };
 
-  const filteredJournals = journals.filter(j => {
-    const sub = subjects.find(s => s.id === j.mapelId);
+  const safeJournals = journals || [];
+  const safeSubjects = subjects || [];
+
+  const filteredJournals = safeJournals.filter(j => {
+    const sub = safeSubjects.find(s => s.id === j.mapelId);
     const matchSearch =
       j.materi.toLowerCase().includes(searchQuery.toLowerCase()) ||
       j.kegiatan.toLowerCase().includes(searchQuery.toLowerCase()) ||

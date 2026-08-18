@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { StatCard } from '../common/StatCard';
 import { BadgeStatus } from '../common/BadgeStatus';
+import { ModalEditKelasFaseGuru } from './ModalEditKelasFaseGuru';
 import {
   Users,
   CalendarCheck2,
@@ -17,7 +18,13 @@ import {
   AlertCircle,
   HelpCircle,
   FileSpreadsheet,
-  Plus
+  Plus,
+  School,
+  SlidersHorizontal,
+  UserCheck,
+  Edit3,
+  Layers,
+  ChevronRight
 } from 'lucide-react';
 
 export const DashboardView: React.FC = () => {
@@ -37,29 +44,42 @@ export const DashboardView: React.FC = () => {
     setCurrentTab
   } = useApp();
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [modalInitialTab, setModalInitialTab] = useState<'kelas_fase' | 'wali_kelas' | 'daftar_guru'>('kelas_fase');
+
   const todayStr = '2026-08-17'; // current simulated school day
-  const todayAttendance = attendanceRecords.filter(r => r.tanggal === todayStr);
+  const safeAttendance = attendanceRecords || [];
+  const safeStudents = students || [];
+  const safeTeachers = teachers || [];
+  const safeSubjects = subjects || [];
+  const safeGrades = grades || [];
+  const safeJournals = journals || [];
+  const safeSchedule = schedule || [];
+  const safeCleaningDuties = cleaningDuties || [];
+  const safeEvents = events || [];
+
+  const todayAttendance = safeAttendance.filter(r => r.tanggal === todayStr);
 
   const hadirCount = todayAttendance.filter(r => r.status === 'Hadir').length;
   const sakitCount = todayAttendance.filter(r => r.status === 'Sakit').length;
   const izinCount = todayAttendance.filter(r => r.status === 'Izin').length;
   const alpaCount = todayAttendance.filter(r => r.status === 'Alpa').length;
-  const totalPresensi = todayAttendance.length || students.length;
-  const attendanceRate = totalPresensi > 0 ? Math.round((hadirCount / students.length) * 100) : 100;
+  const totalPresensi = todayAttendance.length || safeStudents.length;
+  const attendanceRate = totalPresensi > 0 && safeStudents.length > 0 ? Math.round((hadirCount / safeStudents.length) * 100) : 100;
 
   // Grade averages across all subjects
-  const allGradesList = grades.map(g => g.nilai);
+  const allGradesList = safeGrades.map(g => g.nilai);
   const classGradeAvg = allGradesList.length > 0 
     ? (allGradesList.reduce((a, b) => a + b, 0) / allGradesList.length).toFixed(1)
     : '85.0';
 
   // Schedule for Monday (Senin)
-  const todaySchedule = schedule.filter(s => s.hari === 'Senin');
-  const todayPiket = cleaningDuties.find(d => d.hari === 'Senin');
+  const todaySchedule = safeSchedule.filter(s => s.hari === 'Senin');
+  const todayPiket = safeCleaningDuties.find(d => d.hari === 'Senin');
 
   // Calculate average per subject for chart
-  const subjectAverages = subjects.map(sub => {
-    const subGrades = grades.filter(g => g.mapelId === sub.id);
+  const subjectAverages = safeSubjects.map(sub => {
+    const subGrades = safeGrades.filter(g => g.mapelId === sub.id);
     const avg = subGrades.length > 0 
       ? Math.round(subGrades.reduce((sum, g) => sum + g.nilai, 0) / subGrades.length) 
       : 80;
@@ -73,14 +93,14 @@ export const DashboardView: React.FC = () => {
 
   // 14 Administration Books Status
   const adminBooks = [
-    { no: 1, title: 'Buku Induk Siswa', status: `Lengkap (${students.length} Siswa)`, tab: 'siswa' },
-    { no: 2, title: 'Buku Induk Guru & DUK Pegawai', status: `${teachers.length} Pendidik & Tendik`, tab: 'guru' },
+    { no: 1, title: 'Buku Induk Siswa', status: `Lengkap (${safeStudents.length} Siswa)`, tab: 'siswa' },
+    { no: 2, title: 'Buku Induk Guru & DUK Pegawai', status: `${safeTeachers.length} Pendidik & Tendik`, tab: 'guru' },
     { no: 3, title: 'Buku Presensi / Absensi', status: 'Terisi Hari Ini', tab: 'presensi' },
     { no: 4, title: 'Buku Daftar Nilai & TP', status: 'Formatif & Sumatif Aktif', tab: 'nilai' },
     { no: 5, title: 'Buku Rapor Kurikulum Merdeka', status: 'Siap Cetak', tab: 'raport' },
-    { no: 6, title: 'Buku Agenda & Jurnal Guru', status: `${journals.length} Kegiatan Tercatat`, tab: 'jurnal' },
+    { no: 6, title: 'Buku Agenda & Jurnal Guru', status: `${safeJournals.length} Kegiatan Tercatat`, tab: 'jurnal' },
     { no: 7, title: 'Buku Jadwal & Kalender', status: 'Senin - Sabtu Terstruktur', tab: 'jadwal' },
-    { no: 8, title: 'Buku Kas & Iuran Kelas', status: `Saldo Rp ${getCurrentCashBalance().toLocaleString('id-ID')}`, tab: 'kas' },
+    { no: 8, title: 'Buku Kas & Iuran Kelas', status: `Saldo Rp ${(getCurrentCashBalance?.() || 0).toLocaleString('id-ID')}`, tab: 'kas' },
     { no: 9, title: 'Buku Inventaris Ruang (KIR)', status: 'Sarpras Terdata', tab: 'inventaris' },
     { no: 10, title: 'Buku Catatan Konseling', status: 'Perilaku & Bimbingan', tab: 'konseling' },
     { no: 11, title: 'Buku Prestasi Siswa', status: 'Prestasi Akademik & Bakat', tab: 'konseling' },
@@ -88,6 +108,11 @@ export const DashboardView: React.FC = () => {
     { no: 13, title: 'Buku Ekstrakurikuler', status: 'Pramuka, Sains, Seni, Dokter Kecil', tab: 'raport' },
     { no: 14, title: 'Buku Asesmen & Remedial', status: 'Terintegrasi Asisten AI', tab: 'ai_assistant' }
   ];
+
+  const handleOpenEdit = (tab: 'kelas_fase' | 'wali_kelas' | 'daftar_guru') => {
+    setModalInitialTab(tab);
+    setIsEditModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -123,6 +148,13 @@ export const DashboardView: React.FC = () => {
           {/* Quick Actions in Banner */}
           <div className="flex flex-wrap md:flex-col gap-2 shrink-0">
             <button
+              onClick={() => handleOpenEdit('kelas_fase')}
+              className="flex items-center justify-center gap-2 rounded-xl bg-blue-500/80 hover:bg-blue-500 border border-blue-300/40 px-4 py-2.5 text-xs font-bold text-white shadow-md transition-all active:scale-95 backdrop-blur-sm"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span>Edit Kelas, Fase & Guru</span>
+            </button>
+            <button
               onClick={() => setCurrentTab('presensi')}
               className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-blue-900 shadow-md hover:bg-blue-50 transition-all active:scale-95"
             >
@@ -136,6 +168,114 @@ export const DashboardView: React.FC = () => {
               <FileSpreadsheet className="h-4 w-4" />
               <span>Cetak Rapor Siswa</span>
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* PANEL IDENTITAS & MENU CEPAT: KELAS, FASE, DAN GURU */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 mb-3.5 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <School className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                Identitas Kelas & Pendidik Aktif
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  Tahun Ajaran {schoolInfo.academicYear}
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Informasi rombongan belajar, fase kurikulum, dan wali kelas yang terhubung ke seluruh lembar administrasi.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleOpenEdit('kelas_fase')}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 transition-colors"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+              <span>Edit Data Kelas & Fase</span>
+            </button>
+            <button
+              onClick={() => handleOpenEdit('wali_kelas')}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-800 transition-colors"
+            >
+              <UserCheck className="h-3.5 w-3.5" />
+              <span>Edit Wali Kelas</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 3 Quick Cards for Kelas, Fase, Guru */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Card 1: Kelas */}
+          <div
+            onClick={() => handleOpenEdit('kelas_fase')}
+            className="group cursor-pointer rounded-xl p-3.5 border border-slate-100 dark:border-slate-800/80 bg-slate-50/70 hover:bg-blue-50/50 dark:bg-slate-800/40 dark:hover:bg-blue-950/20 hover:border-blue-200 dark:hover:border-blue-800 transition-all"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                <GraduationCap className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                Rombongan Belajar
+              </span>
+              <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                Edit <ChevronRight className="h-3 w-3" />
+              </span>
+            </div>
+            <p className="text-base font-black text-slate-900 dark:text-white">
+              Kelas {schoolInfo.className}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {schoolInfo.semester} • TA {schoolInfo.academicYear}
+            </p>
+          </div>
+
+          {/* Card 2: Fase */}
+          <div
+            onClick={() => handleOpenEdit('kelas_fase')}
+            className="group cursor-pointer rounded-xl p-3.5 border border-slate-100 dark:border-slate-800/80 bg-slate-50/70 hover:bg-emerald-50/50 dark:bg-slate-800/40 dark:hover:bg-emerald-950/20 hover:border-emerald-200 dark:hover:border-emerald-800 transition-all"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                <Layers className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                Fase Kurikulum
+              </span>
+              <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                Edit <ChevronRight className="h-3 w-3" />
+              </span>
+            </div>
+            <p className="text-base font-black text-slate-900 dark:text-white">
+              {schoolInfo.phase}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {schoolInfo.kurikulum}
+            </p>
+          </div>
+
+          {/* Card 3: Wali Kelas & Guru */}
+          <div
+            onClick={() => handleOpenEdit('wali_kelas')}
+            className="group cursor-pointer rounded-xl p-3.5 border border-slate-100 dark:border-slate-800/80 bg-slate-50/70 hover:bg-purple-50/50 dark:bg-slate-800/40 dark:hover:bg-purple-950/20 hover:border-purple-200 dark:hover:border-purple-800 transition-all"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                <UserCheck className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                Wali Kelas & Pendidik
+              </span>
+              <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                Edit <ChevronRight className="h-3 w-3" />
+              </span>
+            </div>
+            <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+              {schoolInfo.homeroomTeacherName || 'Sri Wahyuni, S.Pd.'}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+              NIP: {schoolInfo.homeroomTeacherNip || '-'} • {teachers.length} Guru Aktif
+            </p>
           </div>
         </div>
       </div>
@@ -367,8 +507,8 @@ export const DashboardView: React.FC = () => {
                   Petugas Piket Kelas Hari Ini:
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {todayPiket.siswaIds.map(sId => {
-                    const st = students.find(item => item.id === sId);
+                  {(todayPiket.siswaIds || []).map(sId => {
+                    const st = safeStudents.find(item => item.id === sId);
                     return (
                       <span
                         key={sId}
@@ -395,7 +535,7 @@ export const DashboardView: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              {events.slice(0, 3).map(ev => (
+              {safeEvents.slice(0, 3).map(ev => (
                 <div
                   key={ev.id}
                   className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-800/40"
@@ -436,6 +576,13 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal Edit Kelas, Fase & Guru */}
+      <ModalEditKelasFaseGuru
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        initialTab={modalInitialTab}
+      />
     </div>
   );
 };

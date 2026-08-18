@@ -49,13 +49,16 @@ export const KonselingPrestasiView: React.FC = () => {
     hasil: 'Dalam Pemantauan'
   });
 
-  const konselingNotes = studentNotes.filter(n => n.kategori === 'Bimbingan' || n.kategori === 'Pelanggaran' || n.kategori === 'Konseling Ortu');
-  const prestasiNotes = studentNotes.filter(n => n.kategori === 'Prestasi');
+  const safeNotes = studentNotes || [];
+  const safeStudents = students || [];
+
+  const konselingNotes = safeNotes.filter(n => n.kategori === 'Bimbingan' || n.kategori === 'Pelanggaran' || n.kategori === 'Konseling Ortu');
+  const prestasiNotes = safeNotes.filter(n => n.kategori === 'Prestasi');
 
   const currentNotes = activeTab === 'konseling' ? konselingNotes : prestasiNotes;
 
   const filteredNotes = currentNotes.filter(n => {
-    const student = students.find(s => s.id === n.siswaId);
+    const student = safeStudents.find(s => s.id === n.siswaId);
     const matchSearch =
       n.kasusAtauPrestasi.toLowerCase().includes(searchQuery.toLowerCase()) ||
       n.tindakLanjut.toLowerCase().includes(searchQuery.toLowerCase()) ||

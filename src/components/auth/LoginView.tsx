@@ -144,45 +144,54 @@ export const LoginView: React.FC = () => {
                 <KeyRound className="h-4 w-4 text-amber-400" />
                 <span>Pilih Akun Demo (Klik untuk Isi Otomatis)</span>
               </div>
-              <span className="text-[11px] text-slate-400">3 Peran Tersedia</span>
+              <span className="text-[11px] text-slate-400">{availableUsers.length} Akun Tersedia</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
               {availableUsers.map((u) => {
                 const isWali = u.role === 'wali_kelas';
                 const isAdmin = u.role === 'admin';
+                const isMapel = u.role === 'guru_mapel';
+                const isInactive = u.status === 'Nonaktif';
+
                 return (
                   <button
                     key={u.id}
                     type="button"
                     onClick={() => handleSelectDemoAccount(u)}
-                    className="flex flex-col text-left p-2.5 rounded-xl bg-slate-900/80 border border-slate-700 hover:border-blue-500/80 hover:bg-slate-800/90 transition-all group"
+                    className={`flex flex-col text-left p-2.5 rounded-xl border transition-all group ${
+                      isInactive 
+                        ? 'bg-slate-900/40 border-slate-800 opacity-60' 
+                        : 'bg-slate-900/80 border-slate-700 hover:border-blue-500/80 hover:bg-slate-800/90'
+                    }`}
                   >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <img
-                        src={u.avatar}
-                        alt={u.name}
-                        className="h-6 w-6 rounded-full object-cover ring-1 ring-slate-600"
-                      />
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    <div className="flex items-center justify-between gap-1 mb-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <img
+                          src={u.avatar}
+                          alt={u.name}
+                          className="h-5 w-5 rounded-full object-cover ring-1 ring-slate-600 shrink-0"
+                        />
+                        <span className="text-xs font-bold text-slate-200 truncate group-hover:text-blue-300">
+                          {u.name.split(',')[0]}
+                        </span>
+                      </div>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
                         isWali 
                           ? 'bg-blue-900/60 text-blue-300 border border-blue-700/50' 
                           : isAdmin 
                           ? 'bg-purple-900/60 text-purple-300 border border-purple-700/50' 
+                          : isMapel
+                          ? 'bg-amber-900/60 text-amber-300 border border-amber-700/50'
                           : 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50'
                       }`}>
-                        {isWali ? 'Wali Kelas' : isAdmin ? 'Kepsek' : 'Siswa'}
+                        {isWali ? 'Wali Kelas' : isAdmin ? 'Kepsek' : isMapel ? 'Guru Mapel' : 'Siswa'}
                       </span>
                     </div>
-                    <p className="text-xs font-bold text-slate-200 truncate group-hover:text-blue-300">
-                      {u.name.split(',')[0]}
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                      ID: <span className="text-slate-300 font-semibold">{u.username}</span>
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-mono">
-                      Sandi: <span className="text-amber-400 font-semibold">{u.password}</span>
-                    </p>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                      <span>ID: <strong className="text-slate-300 font-semibold">{u.username}</strong></span>
+                      <span>Sandi: <strong className="text-amber-400 font-semibold">{u.password}</strong></span>
+                    </div>
                   </button>
                 );
               })}

@@ -64,7 +64,9 @@ export const AgendaSekolahTab: React.FC = () => {
     }
   };
 
-  const filteredEvents = events
+  const safeEvents = events || [];
+
+  const filteredEvents = safeEvents
     .filter(ev => {
       if (selectedCategory !== 'Semua' && ev.kategori !== selectedCategory) return false;
       if (!searchQuery.trim()) return true;

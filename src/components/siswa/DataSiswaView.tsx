@@ -76,7 +76,8 @@ export const DataSiswaView: React.FC = () => {
   });
 
   // Filter & Sorting Logic
-  const filteredStudents = students
+  const safeStudents = students || [];
+  const filteredStudents = safeStudents
     .filter(s => {
       const matchQuery =
         s.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||

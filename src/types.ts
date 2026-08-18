@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'wali_kelas' | 'siswa';
+export type UserRole = 'admin' | 'wali_kelas' | 'guru_mapel' | 'siswa';
 
 export interface UserProfile {
   id: string;
@@ -11,6 +11,21 @@ export interface UserProfile {
   title: string;
   nipOrNisn: string;
   classAssigned: string;
+  status?: 'Aktif' | 'Nonaktif';
+  phone?: string;
+  lastLogin?: string;
+  createdAt?: string;
+  customAllowedTabs?: ActiveTab[];
+}
+
+export type RolePermissions = Record<UserRole, ActiveTab[]>;
+
+export interface MenuItemPermission {
+  id: ActiveTab;
+  label: string;
+  category: 'Utama' | 'Akademik' | 'Administrasi' | 'Layanan' | 'Sistem';
+  description: string;
+  defaultRoles: UserRole[];
 }
 
 export interface SchoolInfo {
@@ -75,6 +90,21 @@ export interface Subject {
   kktp: number; // Kriteria Ketercapaian Tujuan Pembelajaran (min score e.g. 75)
   guruPengampu: string;
   iconName: string;
+  deskripsi?: string;
+  jumlahJamPerMinggu?: number;
+}
+
+export interface TujuanPembelajaran {
+  id: string;
+  mapelId: string;
+  kode: string; // e.g. "TP 1", "TP 2", "TP 3", "TP 4", "TP 4.1"
+  lingkupMateri: string; // e.g. "Bab 1: Pancasila Sebagai Nilai Kehidupan"
+  deskripsi: string; // Rumusan kalimat TP
+  semester: '1 (Ganjil)' | '2 (Genap)' | 'Semua';
+  fase?: string; // e.g. "Fase B (Kelas 4)"
+  kktp?: number; // Target nilai ketuntasan khusus TP ini
+  ringkasanRaporTuntas?: string;
+  ringkasanRaporPerluBimbingan?: string;
 }
 
 export type AssessmentType = 
